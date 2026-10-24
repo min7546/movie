@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>영상 보고 생각 쓰기</title>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#FFF6F1; --ink:#4E3B33; --main:#EE8F6A; --line:#F5DCCF; }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  /* 예쁜 스크롤 막대 */
+  ::-webkit-scrollbar{width:12px;height:12px}
+  ::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:transparent}
+  ::-webkit-scrollbar-button{display:none;width:0;height:0}
+  ::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--main) 45%,#fff);border:3px solid transparent;border-radius:99px;background-clip:padding-box}
+  ::-webkit-scrollbar-thumb:hover{background-color:color-mix(in srgb,var(--main) 75%,#fff)}
+  @supports not selector(::-webkit-scrollbar){ *{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--main) 45%,#fff) transparent} }
+  body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:'Gowun Dodum',sans-serif;display:flex;justify-content:center;padding:24px 16px 60px}
+  .wrap{width:100%;max-width:760px}
+  .std{display:inline-block;background:#fff;border:2px solid var(--line);border-radius:999px;padding:3px 14px;font-size:14px}
+  h1{font-size:clamp(26px,4.5vw,38px);margin:10px 0 14px}
+  .box{background:#fff;border:2px solid var(--line);border-radius:22px;padding:18px 20px;margin-bottom:18px}
+
+  /* 선생님 설정: ① 영상 제목 ② 영상 링크 ③ 시작 시간 */
+  /* 선생님 입력: 작게 한 줄로 */
+  .box.setup{padding:10px 14px;border-style:dashed}
+  .set-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;margin-bottom:8px;opacity:.85}
+  .set-row{display:flex;gap:6px;flex-wrap:wrap}
+  .set-row input{flex:1 1 150px;min-width:0;font:inherit;font-size:14px;border:2px solid var(--line);border-radius:10px;padding:6px 10px}
+  .set-row #vTitle{flex:1.2 1 150px} .set-row #vUrl{flex:1.6 1 190px} .set-row #vStart{flex:0 0 88px}
+  .set-row input:focus{outline:none;border-color:var(--main)}
+  .yt-chip{display:inline-flex;align-items:center;gap:5px;background:#fff;color:var(--ink);text-decoration:none;border:2px solid var(--line);border-radius:999px;padding:1px 10px 1px 7px;font-size:13px;transition:.15s}
+  .yt-chip:hover{border-color:#FF0000}
+  .yt-chip svg{width:20px;height:14px;flex:none}
+  .put{font:inherit;font-size:14px;border:0;border-radius:999px;background:var(--main);color:#fff;padding:6px 16px;cursor:pointer;white-space:nowrap}
+  .setup .err{text-align:left;min-height:0;margin:4px 0 0;font-size:13px}
+  .err{color:#D9534F;text-align:center;min-height:22px;margin:8px 0 0;font-size:15px}
+
+  /* 영상 */
+  .vtitle{margin:0 0 10px;font-size:22px}
+  .video iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:14px;display:block}
+  .vbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:14px}
+  .vbar .when{opacity:.65;margin-right:auto}
+  .mini{font:inherit;font-size:14px;border:2px solid var(--line);background:#fff;border-radius:999px;padding:4px 12px;cursor:pointer}
+  .mini.main{background:var(--main);border-color:var(--main);color:#fff}
+
+  /* 학생 쓰기 */
+  .write label{display:block;font-size:20px;margin:14px 0 4px}
+  .write label:first-child{margin-top:0}
+  .hint{font-size:14px;opacity:.65;margin:0 0 6px}
+  textarea{width:100%;font:inherit;font-size:17px;border:2px solid var(--line);border-radius:14px;padding:10px 12px;min-height:84px;resize:vertical}
+  textarea:focus{outline:none;border-color:var(--main)}
+  .send{display:block;width:100%;margin-top:18px;font:inherit;font-size:21px;border:0;border-radius:999px;background:var(--main);color:#fff;padding:13px;cursor:pointer}
+  .thanks{text-align:center;padding:26px 10px}
+  .thanks b{display:block;font-size:64px;line-height:1.2}
+  .thanks h2{margin:6px 0}
+  .thanks p{margin:0 0 14px;opacity:.75}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="std" id="std"></span>
+  <h1 id="title">🎬 영상 보고 생각 쓰기</h1>
+
+  <!-- 선생님 설정 (학생용 주소로 들어오면 안 보여요) -->
+  <div class="box setup" id="setup" hidden>
+    <div class="set-h">🎬 영상 제목, 영상 링크, 시작 시간을 입력해주세요!
+      <a class="yt-chip" id="ytFind" target="_blank" rel="noopener" title="유튜브에서 영상 찾기"><svg viewBox="0 0 28 20" aria-hidden="true"><rect width="28" height="20" rx="5" fill="#FF0000"/><path d="M11 5.5v9l8-4.5z" fill="#fff"/></svg>영상 보기</a></div>
+    <div class="set-row">
+      <input id="vTitle" maxlength="60" placeholder="① 영상 제목" aria-label="영상 제목">
+      <input id="vUrl" placeholder="② 영상 링크 (유튜브 주소)" aria-label="영상 링크">
+      <input id="vStart" placeholder="③ 3:20" aria-label="시작 시간">
+      <button class="put" id="put" type="button">영상 넣기</button>
+    </div>
+    <p class="err" id="vErr"></p>
+  </div>
+
+  <!-- 영상 -->
+  <div class="box video" id="video" hidden>
+    <h2 class="vtitle" id="vShowTitle"></h2>
+    <div id="player"></div>
+    <div class="vbar">
+      <span class="when" id="when"></span>
+      <button class="mini main" id="share">🔗 학생용 주소 복사</button>
+      <button class="mini" id="change">🔄 영상 바꾸기</button>
+    </div>
+  </div>
+
+  <!-- 학생 쓰기 → 제출하기 -->
+  <div class="box write" id="write">
+    <label for="learn">💡 알게 된 점</label>
+    <p class="hint">영상에서 새로 알게 된 사실이나 생각을 써요.</p>
+    <textarea id="learn" maxlength="300"></textarea>
+    <label for="feel">💗 느낀 점</label>
+    <p class="hint">영상 속 장면 하나를 떠올리며, 그때 든 마음을 써요.</p>
+    <textarea id="feel" maxlength="300"></textarea>
+    <label for="ask">❓ 더 궁금한 점</label>
+    <p class="hint">친구들과 이야기 나누고 싶은 질문을 하나 써요. (없으면 비워도 돼요)</p>
+    <textarea id="ask" maxlength="200"></textarea>
+    <button class="send" id="send">제출하기</button>
+    <p class="err" id="err"></p>
+  </div>
+</div>
+
+<script>
+  /* ===== 영상은 화면에서 넣어요 (코드를 고치지 않아도 돼요) =====
+     늘 같은 영상을 쓰고 싶으면 아래 세 줄에 적어 둬도 돼요. */
+  const VIDEO_TITLE = "";   // 예: "행복이란 무엇일까?"
+  const VIDEO_URL = "";     // 예: "https://youtu.be/xxxxxxxxxxx"
+  const VIDEO_START = "";   // 예: "3:20" (비우면 처음부터)
+  const DATA = /*DATA*/{"code":"9도01-01","t":"도덕적인 삶과 자아","text":"자신의 삶과 가치관에 대한 성찰을 통해 자아를 올바로 이해하고, 삶에서 도덕이 필요한 이유에 근거하여 도덕적인 삶에 대한 의지를 기른다.","q":"나는 어떤 사람이 되고 싶나요? 그러려면 어떤 노력이 필요할까요?","pairs":[["자아","나 자신에 대한 이해와 느낌"],["가치관","무엇이 중요하고 옳은지 판단하는 나만의 기준"],["성찰","자신의 생각과 행동을 돌아보고 살피는 것"],["도덕","사람이 마땅히 지켜야 할 도리와 규범"]],"video":"도덕이 필요한 이유","news":["청소년 가치관","도덕적 삶","청소년 자존감","선행 미담"],"make":"나를 소개하는 가치관 명함","grade":"중학교"}/*END*/;
+
+  const $ = id => document.getElementById(id);
+  document.title = "영상 보고 생각 쓰기 · " + DATA.t;
+  $("std").textContent = `🎬 [${DATA.code}] ${DATA.t}`;
+  $("std").title = DATA.text;
+  $("title").textContent = `🎬 '${DATA.t}' 영상 보고 생각 쓰기`;
+  $("ytFind").href = "https://www.youtube.com/results?search_query=" + encodeURIComponent(DATA.video);
+
+  // 유튜브 주소에서 영상 번호(11글자)만 뽑아요
+  function ytId(u) {
+    const m = String(u).match(/(?:youtu\.be\/|v=|shorts\/|embed\/|live\/)([\w-]{11})/);
+    return m ? m[1] : "";
+  }
+  // "3:20", "1:02:30", "200", "3m20s" → 초
+  function toSec(s) {
+    s = String(s || "").trim(); if (!s) return 0;
+    if (/[hms]/.test(s)) { const m = s.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s?)?$/); if (m) return (+m[1] || 0) * 3600 + (+m[2] || 0) * 60 + (+m[3] || 0); }
+    return s.split(":").reduce((a, n) => a * 60 + (+n || 0), 0);
+  }
+  const urlStart = u => { const m = String(u).match(/[?&](?:t|start)=([\dhms]+)/); return m ? toSec(m[1]) : 0; };
+  const mmss = n => `${Math.floor(n / 60)}:${String(n % 60).padStart(2, "0")}`;
+
+  /* 영상은 어디서 가져오나요? (앞에 있는 것이 먼저)
+     ① 학생용 주소: 주소 뒤 ?v=영상번호&t=초&title=제목  → 학생은 설정 칸이 안 보여요
+     ② 위의 VIDEO_URL
+     ③ 선생님이 이 화면에서 넣은 영상 (이 기기에 기억) */
+  const VKEY = "video.src." + DATA.code;
+  const qs = new URLSearchParams(location.search);
+  const student = /^[\w-]{11}$/.test(qs.get("v") || "");
+  function source() {
+    if (student) return { title: (qs.get("title") || "").slice(0, 60), id: qs.get("v"), start: Math.max(0, parseInt(qs.get("t")) || 0) };
+    if (ytId(VIDEO_URL)) return { title: VIDEO_TITLE, id: ytId(VIDEO_URL), start: toSec(VIDEO_START) || urlStart(VIDEO_URL) };
+    try { return JSON.parse(localStorage.getItem(VKEY) || "null"); } catch (e) { return null; }
+  }
+
+  let cur = null;
+  function showVideo(src) {
+    cur = src;
+    $("setup").hidden = true; $("video").hidden = false;
+    $("vShowTitle").textContent = src.title ? "📺 " + src.title : "";
+    $("vShowTitle").hidden = !src.title;
+    $("player").innerHTML = `<iframe src="https://www.youtube.com/embed/${src.id}?start=${src.start}&rel=0" title="${(src.title || "수업 영상").replace(/"/g, "&quot;")}" allowfullscreen></iframe>`;
+    $("when").textContent = src.start ? `▶ ${mmss(src.start)}부터 시작해요` : "▶ 처음부터 재생해요";
+    $("share").hidden = $("change").hidden = student;
+    $("share").textContent = "🔗 학생용 주소 복사";
+  }
+  function showSetup(prev) {
+    $("video").hidden = true; $("setup").hidden = false;
+    $("vTitle").value = prev ? prev.title || "" : "";
+    $("vUrl").value = prev ? "https://youtu.be/" + prev.id : "";
+    $("vStart").value = prev && prev.start ? mmss(prev.start) : "";
+    $("vErr").textContent = "";
+  }
+
+  $("put").onclick = () => {
+    const u = $("vUrl").value.trim(), id = ytId(u);
+    if (!id) return $("vErr").textContent = "영상 링크를 확인해 주세요. (youtube.com 또는 youtu.be 주소)";
+    const src = { title: $("vTitle").value.trim(), id, start: toSec($("vStart").value) || urlStart(u) };
+    try { localStorage.setItem(VKEY, JSON.stringify(src)); } catch (e) {}
+    showVideo(src);
+  };
+  ["vTitle", "vUrl", "vStart"].forEach(k => $(k).onkeydown = e => { if (e.key === "Enter") $("put").click(); });
+  $("change").onclick = () => showSetup(cur);
+  $("share").onclick = async () => {
+    if (!/^https?:$/.test(location.protocol)) return alert("학생용 주소는 웹앱을 배포한 뒤(3단계) 그 주소에서 만들 수 있어요.\n지금처럼 내 컴퓨터 파일로 열었을 때는 영상만 미리 볼 수 있어요.");
+    const p = new URLSearchParams({ v: cur.id });
+    if (cur.start) p.set("t", cur.start);
+    if (cur.title) p.set("title", cur.title);
+    const u = location.origin + location.pathname + "?" + p.toString();
+    try { await navigator.clipboard.writeText(u); $("share").textContent = "✓ 복사됨! 학생들에게 보내요"; }
+    catch (e) { prompt("이 주소를 복사해 학생들에게 보내요", u); }
+  };
+
+  const first = source();
+  first ? showVideo(first) : showSetup(null);
+
+  /* ===== 학생: 쓰고 → 제출하기 ===== */
+  const KEY = "video.notes." + DATA.code;
+  // 🔐 관리자 대시보드에 보일 기록
+  const ADMIN = { key: KEY, title: "영상 보고 생각 쓰기",
+    cols: [["video", "영상"], ["learn", "알게 된 점"], ["feel", "느낀 점"], ["ask", "더 궁금한 점"], ["at", "제출 시각"]] };
+  $("send").onclick = () => {
+    const learn = $("learn").value.trim(), feel = $("feel").value.trim(), ask = $("ask").value.trim();
+    if (!learn || !feel) return $("err").textContent = "알게 된 점과 느낀 점을 모두 써 주세요.";
+    // 지금은 이 기기에만 남아요. (4단계에서 파이어스토어를 연결하면 선생님이 한곳에서 모아 봐요)
+    try {
+      const list = JSON.parse(localStorage.getItem(KEY) || "[]");
+      list.push({ video: cur ? cur.title || cur.id : "", learn, feel, ask, at: Date.now() });
+      localStorage.setItem(KEY, JSON.stringify(list));
+    } catch (e) {}
+    $("write").innerHTML = `<div class="thanks"><b>🙌</b><h2>제출했어요! 고마워요</h2><p>오늘 영상에서 얻은 생각을 친구들과 나눠 봐요.</p>
+      <button class="mini" onclick="location.reload()">✏️ 다시 쓰기</button></div>`;
+  };
+</script>
+<!-- ===== 🔐 관리자 대시보드 (처음 비밀번호 1234 · 대시보드에서 바꿀 수 있어요) =====
+     지금은 이 기기에 저장된 기록만 보여요. 4단계에서 파이어스토어를 연결하면 모든 학생 기록이 모여요. -->
+<style>
+  .adm-btn{position:fixed;top:12px;right:12px;z-index:50;font:inherit;font-size:14px;color:var(--ink);background:#fff;border:2px solid var(--line);border-radius:999px;padding:5px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+  .adm-btn:hover{border-color:var(--main)}
+  .adm{position:fixed;inset:0;z-index:60;background:rgba(40,30,30,.35);display:flex;align-items:flex-start;justify-content:center;padding:40px 12px;overflow:auto}
+  .adm[hidden]{display:none}
+  .adm-in{background:#fff;color:var(--ink);border-radius:22px;width:100%;max-width:900px;padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.2)}
+  .adm-h{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+  .adm-h h2{margin:0;font-size:22px;flex:1}
+  .adm-b{white-space:nowrap;font:inherit;font-size:14px;color:var(--ink);border:2px solid var(--line);background:#fff;border-radius:999px;padding:5px 14px;cursor:pointer}
+  .adm-b.main{background:var(--main);border-color:var(--main);color:#fff}
+  .adm-b.warn:hover{border-color:#D9534F;color:#D9534F}
+  .adm-in input{font:inherit;font-size:16px;border:2px solid var(--line);border-radius:12px;padding:8px 12px;width:auto;flex:1 1 150px;min-width:0}
+  .adm-in input:focus{outline:none;border-color:var(--main)}
+  .adm-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .adm-err{color:#D9534F;font-size:14px;min-height:20px;margin:6px 0 0}
+  .adm-ok{color:#3FAE6F}
+  .adm-stat{display:inline-block;background:color-mix(in srgb,var(--main) 12%,#fff);border-radius:14px;padding:6px 14px;margin-right:6px}
+  .adm-stat b{font-size:20px}
+  .adm-wrap{overflow-x:auto;border:2px solid var(--line);border-radius:14px;margin:12px 0}
+  .adm-in table{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+  .adm-in th,.adm-in td{border-bottom:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;word-break:keep-all;overflow-wrap:anywhere}
+  .adm-in th{background:color-mix(in srgb,var(--main) 8%,#fff);white-space:nowrap}
+  .adm-in tr:last-child td{border-bottom:0}
+  .adm-del{white-space:nowrap;font:inherit;font-size:12px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:1px 8px;cursor:pointer}
+  .adm-pw{background:color-mix(in srgb,var(--main) 6%,#fff);border-radius:14px;padding:10px 14px;margin-top:14px}
+  .adm-pw h3{margin:0 0 4px;font-size:16px}
+  @media print{.adm-btn,.adm{display:none !important}}
+</style>
+<button class="adm-btn" id="admBtn" type="button">🔐 관리자</button>
+<div class="adm" id="adm" hidden><div class="adm-in" id="admIn" role="dialog" aria-label="관리자 대시보드"></div></div>
+<script>
+(() => {
+  // ADMIN = { key: 기록이 저장된 이름, title: 제목, cols: [[칸 이름, 보이는 이름], …], onChange: 기록을 지운 뒤 할 일 }
+  const PW_KEY = "admin.pw." + DATA.code, DEFAULT_PW = "1234";
+  const $a = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const getPw = () => { try { return localStorage.getItem(PW_KEY) || DEFAULT_PW; } catch (e) { return DEFAULT_PW; } };
+  const rows = () => { try { return JSON.parse(localStorage.getItem(ADMIN.key) || "[]"); } catch (e) { return []; } };
+  const save = list => { try { localStorage.setItem(ADMIN.key, JSON.stringify(list)); } catch (e) {} ADMIN.onChange && ADMIN.onChange(); };
+  const cell = (r, k) => k === "at" ? (r.at ? new Date(r.at).toLocaleString("ko-KR") : "") : Array.isArray(r[k]) ? r[k].join(", ") : (r[k] ?? "");
+  let open = false;
+
+  function show(html) { $a("admIn").innerHTML = html; $a("adm").hidden = false; open = true; }
+  function close() { $a("adm").hidden = true; open = false; }
+  const head = t => `<div class="adm-h"><h2>${t}</h2><button class="adm-b" id="admX" type="button">✕ 닫기</button></div>`;
+
+  function login() {
+    show(head("🔐 관리자 로그인") + `
+      <p style="margin:0 0 6px">관리자 비밀번호를 넣어 주세요.</p>
+      <div class="adm-row"><input type="password" id="admPw" placeholder="비밀번호" autocomplete="off"><button class="adm-b main" id="admGo" type="button">들어가기</button></div>
+      <p class="adm-err" id="admErr"></p>`);
+    $a("admPw").focus();
+    const go = () => $a("admPw").value === getPw() ? dash() : ($a("admErr").textContent = "비밀번호가 맞지 않아요.");
+    $a("admGo").onclick = go;
+    $a("admPw").onkeydown = e => { if (e.key === "Enter") go(); };
+  }
+
+  function dash() {
+    const list = rows(), view = list.map((r, i) => ({ r, i })).reverse();
+    show(head("📊 관리자 대시보드 · " + esc(ADMIN.title)) + `
+      <div><span class="adm-stat">기록 <b>${list.length}</b>개</span><span style="font-size:13px;opacity:.65">지금은 이 기기에 저장된 기록만 보여요</span></div>
+      ${list.length ? `<div class="adm-wrap"><table><thead><tr><th>#</th>${ADMIN.cols.map(c => `<th>${esc(c[1])}</th>`).join("")}<th></th></tr></thead><tbody>
+        ${view.map((v, n) => `<tr><td>${list.length - n}</td>${ADMIN.cols.map(c => `<td>${esc(cell(v.r, c[0]))}</td>`).join("")}<td><button class="adm-del" data-i="${v.i}" type="button">지우기</button></td></tr>`).join("")}
+      </tbody></table></div>` : `<p style="opacity:.6;margin:14px 0">아직 기록이 없어요.</p>`}
+      <div class="adm-row">
+        <button class="adm-b main" id="admCsv" type="button" ${list.length ? "" : "disabled"}>⬇️ 엑셀(CSV)로 받기</button>
+        <button class="adm-b warn" id="admClear" type="button" ${list.length ? "" : "disabled"}>🗑 모두 지우기</button>
+        <button class="adm-b" id="admLock" type="button">🔒 잠그기</button>
+      </div>
+      <div class="adm-pw"><h3>🔑 비밀번호 바꾸기</h3>
+        <div class="adm-row"><input type="password" id="admOld" placeholder="지금 비밀번호" autocomplete="off"><input type="password" id="admNew" placeholder="새 비밀번호 (4자 이상)" autocomplete="off"><input type="password" id="admNew2" placeholder="새 비밀번호 한 번 더" autocomplete="off"><button class="adm-b main" id="admChange" type="button">바꾸기</button></div>
+        <p class="adm-err" id="admPwMsg"></p></div>`);
+    $a("admLock").onclick = close;
+    $a("admIn").querySelectorAll(".adm-del").forEach(b => b.onclick = () => {
+      if (!confirm("이 기록을 지울까요?")) return;
+      const l = rows(); l.splice(+b.dataset.i, 1); save(l); dash();
+    });
+    $a("admClear").onclick = () => { if (confirm("기록을 모두 지울까요? 되돌릴 수 없어요.")) { save([]); dash(); } };
+    $a("admCsv").onclick = () => {
+      const q = v => `"${String(v).replace(/"/g, '""')}"`;
+      const csv = [ADMIN.cols.map(c => q(c[1])).join(",")].concat(rows().map(r => ADMIN.cols.map(c => q(cell(r, c[0]))).join(","))).join("\r\n");
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
+      a.download = `${ADMIN.title}_${DATA.code}.csv`; document.body.appendChild(a); a.click(); a.remove();
+    };
+    $a("admChange").onclick = () => {
+      const m = $a("admPwMsg"), o = $a("admOld").value, n = $a("admNew").value, n2 = $a("admNew2").value;
+      m.className = "adm-err";
+      if (o !== getPw()) return m.textContent = "지금 비밀번호가 맞지 않아요.";
+      if (n.length < 4) return m.textContent = "새 비밀번호는 4자 이상으로 해 주세요.";
+      if (n !== n2) return m.textContent = "새 비밀번호 두 칸이 서로 달라요.";
+      try { localStorage.setItem(PW_KEY, n); } catch (e) {}
+      m.className = "adm-err adm-ok"; m.textContent = "✓ 비밀번호를 바꿨어요. 다음부터 새 비밀번호로 들어와요.";
+      ["admOld", "admNew", "admNew2"].forEach(k => $a(k).value = "");
+    };
+  }
+
+  $a("admBtn").onclick = login;
+  $a("adm").onclick = e => { if (e.target.id === "adm" || e.target.id === "admX") close(); };
+  document.addEventListener("keydown", e => { if (open && e.key === "Escape") close(); });
+})();
+</script>
+</body>
+</html>
